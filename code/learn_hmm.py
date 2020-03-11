@@ -12,9 +12,9 @@ import json
 from HMM import unsupervised_HMM
 from helper import (
     parse_poetry,
-    format_poem
+    format_poem,
+    display_title
     )
-
 
 # load file and read as text
 file = open('../data/shakespeare.txt', 'r')
@@ -59,15 +59,13 @@ for k in ks:
     HMM = unsupervised_HMM(obs, k, 100)
     emission, _ = HMM.generate_emission(M)
     
-    print('')
-    print('')
-    print("#" * 70)
-    print("{:^70}".format("with k= "+str(k)))
-    print("#" * 70)
-    print('')
-    print('')
+    # this function displays a section divider and title of section
+    # in the IPython console
+    display_title("with k = "+str(k))
     
     # generate a poem
     poem = format_poem(emission,Tokenizer,w2s_dict)
+    
+    # print the poem
     for line in poem:
         print(line)

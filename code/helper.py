@@ -50,6 +50,17 @@ def parse_poetry(text, Tokenizer):
     return obs
 
 
+def display_title(title_str):
+                  
+    print('')
+    print('')
+    print("#" * 70)
+    print("{:^70}".format(title_str))
+    print("#" * 70)
+    print('')
+    print('')
+    pass
+
 def format_poem(emission,Tokenizer,w2s_dict):
     
     # create a poem
