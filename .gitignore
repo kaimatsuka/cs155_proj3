@@ -1,0 +1,5 @@
+/write-up
+/data
+/code/.ipynb_checkpoints
+*.ini
+*.pyc
