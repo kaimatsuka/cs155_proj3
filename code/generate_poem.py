@@ -1,28 +1,36 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Mar  9 23:06:16 2020
+Created on Thu Mar 12 14:45:59 2020
 
 @author: kaima
 """
 
-
 import keras.preprocessing.text
+from HMM import HiddenMarkovModel
 import json
+from helper import poem_that_rhymes
 
-from HMM import unsupervised_HMM
-from helper import (
-    parse_poetry,
-    format_poem,
-    display_title
-    )
+dataPath = '../data/'
+
+k = 26
+
+fname = 'OA_k'+str(k)+'.json'
+
+
+with open(dataPath+fname, 'r') as f:
+    hmm_param = json.load(f)
 
 # load file and read as text
-file = open('../data/shakespeare.txt', 'r')
-text = file.read()
+with open(dataPath+'shakespeare.txt', 'r') as f:
+    text = f.read()
 
 # load syllable counter
-with open('../data/word_to_syllable_dict.json') as f:
+with open(dataPath+'word_to_syllable_dict.json') as f:
     w2s_dict = json.load(f)
+
+with open(dataPath+'rhyme_to_word_dict.json') as f:
+    r2w_dict = json.load(f)
+
 
 # filter for Tokenizer
 filters = '0123456789!"#$%&()*+,./:;<=>?@[\\]^_`{|}~\t\n' # get rid of '-'
@@ -43,29 +51,23 @@ Tokenizer = keras.preprocessing.text.Tokenizer(num_words = None,
 # fit Tokenizer
 Tokenizer.fit_on_texts(word_sequence)
 
-# convert text to observation (list of list of tokens) using Tokenizer
-obs = parse_poetry(text,Tokenizer)
+# initalize the 
+HMM = HiddenMarkovModel(hmm_param['A'],hmm_param['O'])
 
 
-# %% Generate
+poem_list = ""
+for i in range(5):
+    poem, syll_list = poem_that_rhymes(HMM,Tokenizer,r2w_dict,w2s_dict)
+    poem_list += poem
+    poem_list += "\n\n"
+    for syll in syll_list:
+        poem_list += str(syll) +', '
+        
+    poem_list += "\n\n"
 
-# Generate a single input sequence of length M.
-M = 200
-ks = [6, 8, 10, 12, 14, 16, 18, 20]
 
-for k in ks:
-    
-    # train the unsupervised HMM
-    HMM = unsupervised_HMM(obs, k, 100)
-    emission, _ = HMM.generate_emission(M)
-    
-    # this function displays a section divider and title of section
-    # in the IPython console
-    display_title("with k = "+str(k))
-    
-    # generate a poem
-    poem = format_poem(emission,Tokenizer,w2s_dict)
-    
-    # print the poem
-    for line in poem:
-        print(line)
+# save poems as text
+fname_write = 'hmm_poems_k' + str(k) + '.txt'
+
+with open(dataPath+fname_write, 'w') as f:
+    f.write(poem_list)

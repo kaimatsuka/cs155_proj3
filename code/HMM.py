@@ -529,6 +529,52 @@ class HiddenMarkovModel:
             
         return emission, states
 
+    def generate_emission_with_seed(self, M, seed):
+        '''
+        Generates an emission of length M, with a specified see emission
+
+        Arguments:
+            M:          Length of the emission to generate.
+            seed:       Integer representation of the seed observation
+
+        Returns:
+            emission:   The randomly generated emission as a list.
+
+            states:     The randomly generated states as a list.
+        '''
+
+        # compute probability of y_i given seeds
+        prob_y_given_seed = []
+        for state in range(self.L):
+            prob_y_given_seed.append(self.O[state][seed]*self.A_start[state])
+        den = sum(prob_y_given_seed)
+        for i in range(len(prob_y_given_seed)):
+            prob_y_given_seed[i] /= den
+        
+        # Sample next state.
+        state = self.__sample_prob(prob_y_given_seed)
+        
+        # add first word, and first state
+        emission = [seed]
+        states   = [state]
+        
+        
+        for t in range(M-1):
+            
+            # Sample next state.
+            next_state = self.__sample_prob(self.A[state])
+            state = next_state
+            
+            # Sample next observation.
+            next_obs = self.__sample_prob(self.O[state])
+            
+            # Append 
+            states.append(state)
+            emission.append(next_obs)
+
+        return emission, states
+
+
     def __sample_prob(self, dist):
         '''
         Input: 
@@ -649,7 +695,7 @@ def supervised_HMM(X, Y):
 
     return HMM
 
-def unsupervised_HMM(X, n_states, N_iters):
+def unsupervised_HMM(X, n_states, N_iters,observations=[]):
     '''
     Helper function to train an unsupervised HMM. The function determines the
     number of unique observations in the given data, initializes
@@ -666,17 +712,18 @@ def unsupervised_HMM(X, n_states, N_iters):
         N_iters:    The number of iterations to train on.
     '''
 
-    # Make a set of observations.
-    observations = set()
-    for x in X:
-        observations |= set(x)
-    
+    if len(observations) == 0:
+            
+        # Make a set of observations.
+        observations = set()
+        for x in X:
+            observations |= set(x)
     
     # Compute L and D.
     L = n_states
     D = len(observations)
     
-    random.seed(2020)
+    # random.seed(2020)
     # Randomly initialize and normalize matrix A.
     A = [[random.random() for i in range(L)] for j in range(L)]
 
@@ -685,7 +732,7 @@ def unsupervised_HMM(X, n_states, N_iters):
         for j in range(len(A[i])):
             A[i][j] /= norm
     
-    random.seed(155)
+    # random.seed(155)
     # Randomly initialize and normalize matrix O.
     O = [[random.random() for i in range(D)] for j in range(L)]
 
