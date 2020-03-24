@@ -1,39 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Mar  9 23:06:16 2020
+Created on Fri Mar 13 14:44:05 2020
 
 @author: kaima
 """
 
-
 import keras.preprocessing.text
-import json
-import random
-
+from helper import (parse_poetry, format_poem)
 from HMM import unsupervised_HMM
-from helper import (
-    parse_poetry_2,
-    display_title,
-    poem_that_rhymes,
-    # format_poem
-    )
+import json
 
 dataPath = '../data/'
-
 # load file and read as text
-with open(dataPath+'shakespeare.txt', 'r') as f:
-    text = f.read()
-
-# load syllable counter
-with open(dataPath+'word_to_syllable_dict.json') as f:
-    w2s_dict = json.load(f)
-
-with open(dataPath+'rhyme_to_word_dict.json') as f:
-    r2w_dict = json.load(f)
-
-with open(dataPath+'word_to_rhyme_dict.json') as f:
-    w2r_dict = json.load(f)
-
+file = open('../data/shakespeare.txt', 'r')
+text = file.read()
 
 # filter for Tokenizer
 filters = '0123456789!"#$%&()*+,./:;<=>?@[\\]^_`{|}~\t\n' # get rid of '-'
@@ -51,38 +31,57 @@ Tokenizer = keras.preprocessing.text.Tokenizer(num_words = None,
                                                oov_token = None, 
                                                document_count = 0)
 
+# load syllable counter
+with open(dataPath+'word_to_syllable_dict.json') as f:
+    w2s_dict = json.load(f)
+
+
 # fit Tokenizer
 Tokenizer.fit_on_texts(word_sequence)
 
 # convert text to observation (list of list of tokens) using Tokenizer
-obs = parse_poetry_2(text,Tokenizer)
+obs = parse_poetry(text,Tokenizer)
+
+# train the unsupervised HMM
+HMM = unsupervised_HMM(obs, 10, 100)
 
 
-# reverse the order so that prediction happens backwards (for Rhyme)
-for line in obs:
-    line.reverse()
+
+# %% 
 
 
-# %% Generate
+MAX_WORDS = 20*14
+emission, _ = HMM.generate_emission(MAX_WORDS)
 
-ks = [6, 10, 14, 18, 22, 26, 30]
-# ks = [22, 26, 30]
+poem = []
+line = []
+syllable_ctr = 0
 
-for k in ks:
+for idx in emission:
     
-    display_title('k = '+str(k))
+    # convert token to the word
+    # WARNING: Tokenizer is 1-indexed while HMM from HW6 is 0-indexed 
+    word = Tokenizer.index_word[idx+1]
+    line.append(word)
     
-    # learn line-wise backwards HMM
-    HMM = unsupervised_HMM(obs, k, 100)
-    data = {}
-    data['O'] = HMM.O
-    data['A'] = HMM.A
+    # find the syllable count for the word
+    syll_str = next(x for x in w2s_dict[word] if x.isdigit())
+    syllable_ctr += int(syll_str)
     
-    
-    fname = 'OA_k'+str(k)+'.json'
-    with open(dataPath+fname, 'w') as outfile:
-        json.dump(data, outfile)
+    # stop when syllable count exceeds 10
+    if syllable_ctr >= 10:
+        poem.append(line)
+        line = []
+        syllable_ctr = 0
+        if len(poem) == 14:
+            break
         
-    # poem = poem_that_rhymes(HMM,Tokenizer,r2w_dict,w2s_dict)
-    
-    # print(poem)
+poem_text = format_poem(poem) 
+print(poem_text)
+
+
+# save poems as text
+fname_write = 'hmm_naive.txt'
+
+with open(dataPath+fname_write, 'w') as f:
+    f.write(poem_text)
