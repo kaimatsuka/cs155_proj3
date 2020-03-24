@@ -14,7 +14,8 @@ To train Hidden Markov Model (HMM) without rhyming
 
 To train HMM with rhyming 
 1. Run 'code/train_hmms.py'
-Note that this function trains multiple HMM models for different number of hidden variables.
+1. Run 'code/generate_poem.py'
+Note that 'train_hmms' trains multiple HMM models for different number of hidden variables (for hyperparameter tuning).
 
 To train LSTM
 1. Run 'jupyter/keras_LSTM_preprocess.ipynb'
